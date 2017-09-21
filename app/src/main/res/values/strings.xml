@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">File Explorer</string>
+    <string name="empty_folder">空</string>
+    <string name="title">我的文件</string>
+    <string name="external_storage">内部存储器</string>
+    <string name="press_again_to_exit">再按一次退出</string>
+    <string name="folder">目录</string>
+    <string name="file_count1">%2$d 个文件夹, %1$d 个文件</string>
+    <string name="file_count2">%d 个文件</string>
+    <string name="file_count3">%d 个文件夹</string>
+    <string name="file_count4">空</string>
+</resources>

@@ -1,0 +1,26 @@
+<resources>
+
+    <!-- Base application theme. -->
+    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+        <item name="colorPrimary">#303030</item>
+        <item name="colorPrimaryDark">#252525</item>
+        <item name="colorAccent">#1E88E5</item>
+        <item name="colorSmall">#99000000</item>
+        <item name="colorDivider">#BBBBBB</item>
+        <item name="titleTextColor">#FFFFFF</item>
+    </style>
+
+    <style name="AppTheme.Title">
+        <item name="android:textSize">18sp</item>
+    </style>
+
+    <style name="AppTheme.Subtitle">
+        <item name="android:textSize">10sp</item>
+        <item name="android:textColor">#A0FFFFFF</item>
+    </style>
+
+    <style name="AppTheme.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
+
+</resources>
