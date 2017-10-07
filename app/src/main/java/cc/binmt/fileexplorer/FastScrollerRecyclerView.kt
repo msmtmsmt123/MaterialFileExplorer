@@ -177,7 +177,7 @@ class FastScrollerRecyclerView @JvmOverloads constructor(context: Context, attrs
                         frac = 0f
                     else if (frac > 1)
                         frac = 1f
-                    val index = (adapter.itemCount * frac).toInt()
+                    val index = ((adapter.itemCount - 1) * frac).toInt()
                     if (lastIndex != index) {
                         lastIndex = index
                         scrollToPosition(index)

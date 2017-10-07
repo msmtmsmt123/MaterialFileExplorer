@@ -11,10 +11,9 @@ class FileItem(context: Context, val file: File) {
     val name = file.name ?: ""
     val isDirectory = file.isDirectory
     val dateTime = dateFormat?.format(file.lastModified()) ?: Date(file.lastModified()).toString()
-    val length = when {
-        isDirectory -> context.getString(R.string.folder)!!
-        else -> formatFileSize(file.length())
-    }
+    val info =
+            if (isDirectory) context.getString(R.string.folder)!!
+            else formatFileSize(file.length())
     val type = getType(name)
 
     companion object {

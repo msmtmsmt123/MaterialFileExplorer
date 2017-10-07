@@ -14,6 +14,7 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import kotlinx.android.synthetic.main.activity_main.*
+import java.io.File
 import java.util.*
 import kotlin.collections.HashMap
 
@@ -33,7 +34,8 @@ class MainActivity : AppCompatActivity() {
         initPathView()
 
         swipeRefreshLayout.setOnRefreshListener {
-            barrier.visible()
+            pathView.isEnabled = false
+            recyclerView.isEnabled = false
             Thread({
                 try {
                     val fs = if (showHiddenFile)
@@ -71,7 +73,8 @@ class MainActivity : AppCompatActivity() {
                                     .ofFloat(recyclerView, "alpha", 0f, 1f)
                                     .setDuration(300).start()
                         }
-                        barrier.gone()
+                        recyclerView.isEnabled = true
+                        pathView.isEnabled = true
                     }
                 }
             }).start()
@@ -83,6 +86,15 @@ class MainActivity : AppCompatActivity() {
 
     private val files = ArrayList<FileItem>()
     private var showHiddenFile = false
+    private val fileComparator = kotlin.Comparator<File> { o1, o2 ->
+        if (o1.isDirectory) {
+            if (!o2.isDirectory)
+                return@Comparator Int.MIN_VALUE
+        } else if (o2.isDirectory)
+            return@Comparator Int.MAX_VALUE
+
+        return@Comparator o1.name.toLowerCase().compareTo(o2.name.toLowerCase())
+    }
 
     private fun initPathView() {
         pathView.itemVisibleOffset = {
@@ -100,47 +112,62 @@ class MainActivity : AppCompatActivity() {
             positionRecord[pathView.currentPath.path] = recyclerView.layoutManager.findFirstVisibleItemPosition()
         }
         pathView.afterPathChangedListener = {
-            // 刷新数据
-            val fs = if (showHiddenFile)
-                pathView.currentPath.listFiles()
-            else
-                pathView.currentPath.listFiles({ _, name -> !name.startsWith(".") })
-            if (fs != null) {
-                Arrays.sort(fs, kotlin.Comparator { o1, o2 ->
-                    if (o1.isDirectory) {
-                        if (!o2.isDirectory)
-                            return@Comparator Int.MIN_VALUE
-                    } else if (o2.isDirectory)
-                        return@Comparator Int.MAX_VALUE
-
-                    return@Comparator o1.name.toLowerCase().compareTo(o2.name.toLowerCase())
-                })
-                files.clear()
-                files.addAll(fs.map { FileItem(this, it) })
-                recyclerView.adapter.notifyDataSetChanged()
-                emptyView.visibility = if (files.isEmpty()) View.VISIBLE else View.GONE
-                recyclerView.visibility = if (files.isEmpty()) View.INVISIBLE else View.VISIBLE
-            }
-            updateFileCount()
-            // 恢复位置，要先滚动到底部，再滚动到要显示到位置，这样top位置和要显示到位置才会一致
-            if (files.isEmpty()) {
-                emptyView.alpha = 0f
+            val animator = if (files.isEmpty()) {
                 ObjectAnimator
-                        .ofFloat(emptyView, "alpha", 0f, 0.4f)
-                        .setDuration(300).start()
+                        .ofFloat(emptyView, "alpha", 0.4f, 0f)
             } else {
-                recyclerView.alpha = 0f
-                recyclerView.scrollToPosition(files.size - 1)
-                pathView.post({
-                    val pos = positionRecord[pathView.currentPath.path] ?: 0
-                    recyclerView.scrollToPosition(pos)
-                    ObjectAnimator
-                            .ofFloat(recyclerView, "alpha", 0f, 1f)
-                            .setDuration(300).start()
-                })
+                ObjectAnimator
+                        .ofFloat(recyclerView, "alpha", 1f, 0f)
             }
+            animator.setDuration(200).start()
+
+            swipeRefreshLayout.isEnabled = false
+            pathView.isEnabled = false
+            recyclerView.isEnabled = false
+
+            Thread({
+                // 刷新数据
+                val fs = if (showHiddenFile)
+                    pathView.currentPath.listFiles()
+                else
+                    pathView.currentPath.listFiles({ _, name -> !name.startsWith(".") })
+                if (fs != null) {
+                    Arrays.sort(fs, fileComparator)
+                    files.clear()
+                    files.addAll(fs.map { FileItem(this, it) })
+                }
+                runOnUiThread {
+                    animator.end()
+                    recyclerView.adapter.notifyDataSetChanged()
+                    emptyView.visibility = if (files.isEmpty()) View.VISIBLE else View.GONE
+                    recyclerView.visibility = if (files.isEmpty()) View.INVISIBLE else View.VISIBLE
+                    updateFileCount()
+                    // 恢复位置，要先滚动到底部，再滚动到要显示到位置，这样top位置和要显示到位置才会一致
+                    if (files.isEmpty()) {
+                        emptyView.alpha = 0f
+                        ObjectAnimator
+                                .ofFloat(emptyView, "alpha", 0f, 0.4f)
+                                .setDuration(300).start()
+                    } else {
+                        recyclerView.alpha = 0f
+                        recyclerView.scrollToPosition(files.size - 1)
+                        pathView.post({
+                            val pos = positionRecord[pathView.currentPath.path] ?: 0
+                            recyclerView.scrollToPosition(pos)
+                        })
+                        pathView.postDelayed({
+                            ObjectAnimator
+                                    .ofFloat(recyclerView, "alpha", 0f, 1f)
+                                    .setDuration(300).start()
+                        }, 50)
+                    }
+                    swipeRefreshLayout.isEnabled = true
+                    pathView.isEnabled = true
+                    recyclerView.isEnabled = true
+                }
+            }).start()
         }
-        pathView.push(getString(R.string.external_storage), Environment.getExternalStorageDirectory())
+        pathView.setPath(Environment.getExternalStorageDirectory())
     }
 
     private fun updateFileCount() {
@@ -164,7 +191,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         if (keyCode == KeyEvent.KEYCODE_BACK) {
-            if (!pathView.pop()) {
+            if (recyclerView.isEnabled && !pathView.pop()) {
                 if (System.currentTimeMillis() - lastBackTime < 2000)
                     finish()
                 else {
@@ -191,7 +218,6 @@ class MainActivity : AppCompatActivity() {
 //                } else layoutParams.scrollFlags = SCROLL_FLAG_SCROLL or SCROLL_FLAG_ENTER_ALWAYS or SCROLL_FLAG_SNAP
 //            }
 //        }
-
 
     inner class Adapter : RecyclerView.Adapter<ViewHolder>() {
         private val icFolder: Bitmap
@@ -234,7 +260,7 @@ class MainActivity : AppCompatActivity() {
             val file = files[position]
             holder.file = file
             holder.title.text = file.name
-            holder.length.text = file.length
+            holder.info.text = file.info
             holder.dateTime.text = file.dateTime
             holder.icon.setImageBitmap(
                     if (file.isDirectory) icFolder
@@ -262,15 +288,17 @@ class MainActivity : AppCompatActivity() {
     inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val icon = itemView.findViewById(R.id.icon) as ImageView
         val title = itemView.findViewById(R.id.name) as TextView
-        val length = itemView.findViewById(R.id.length) as TextView
+        val info = itemView.findViewById(R.id.info) as TextView
         val dateTime = itemView.findViewById(R.id.dateTime) as TextView
         var file: FileItem? = null
 
         init {
             itemView.setOnClickListener {
+                if (!recyclerView.isEnabled)
+                    return@setOnClickListener
                 val file = file ?: return@setOnClickListener
                 if (file.isDirectory) {
-                    pathView.push(file.name, file.file)
+                    pathView.push(file.name)
                 } else {
                     itemView.context.toast(file.name)
                 }

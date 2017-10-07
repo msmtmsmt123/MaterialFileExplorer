@@ -14,21 +14,18 @@
         android:background="?attr/colorPrimary"
         android:minHeight="?attr/actionBarSize"
         android:theme="?attr/actionBarTheme"
-        app:titleTextAppearance="@style/AppTheme.Title"
-        app:subtitleTextAppearance="@style/AppTheme.Subtitle" />
+        app:subtitleTextAppearance="@style/AppTheme.Subtitle"
+        app:titleTextAppearance="@style/AppTheme.Title" />
 
     <cc.binmt.fileexplorer.PathView
         android:id="@+id/pathView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="?attr/colorPrimary"
-        app:layout_scrollFlags="scroll|enterAlways|snap" />
-
+        android:background="?attr/colorPrimary" />
 
     <android.support.design.widget.CoordinatorLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
-
 
         <android.support.v4.widget.SwipeRefreshLayout
             android:id="@+id/swipeRefreshLayout"
@@ -54,15 +51,6 @@
             android:visibility="gone"
             tools:visibility="visible" />
 
-        <View
-            android:id="@+id/barrier"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:visibility="gone"
-            android:focusable="true"
-            android:clickable="true" />
-
     </android.support.design.widget.CoordinatorLayout>
-
 
 </LinearLayout>
